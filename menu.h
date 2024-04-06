@@ -19,6 +19,9 @@ typedef struct {
     size_t curr_index;
     size_t view_start_index;
     size_t page_size;
+    bool active_scroll;
+    bool active_need_scroll;
+    int active_x;    
 } Menu;
 
 void menu_init(Menu* menu, std::vector<MenuItem>* items);
