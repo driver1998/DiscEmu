@@ -201,10 +201,10 @@ probe() {
     mkdir $CVI_GADGET/functions/$CLASS.usb$FUNC_NUM
   fi
   if [ "$CLASS" = "mass_storage" ] ; then
-    echo $MSC_FILE >$CVI_GADGET/functions/$CLASS.usb$FUNC_NUM/lun.0/file
     if [ $MSC_CDROM -eq 1 ]; then
       echo 1 > $CVI_GADGET/functions/$CLASS.usb$FUNC_NUM/lun.0/cdrom
     fi
+    echo $MSC_FILE >$CVI_GADGET/functions/$CLASS.usb$FUNC_NUM/lun.0/file    
   fi
   if [ "$CLASS" = "rndis" ] ; then
     #OS STRING
