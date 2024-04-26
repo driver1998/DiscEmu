@@ -22,7 +22,7 @@ Pinout:
 |OLED DC  | 21   |
 |EC11 S1  | 20   |
 |EC11 S2  | 19   |
-|EC11 KEY | 16   |
+|EC11 KEY | 18   |
 
 Currently Pin 16 is set as high output used for EC11 power, this will be changed in later revisions.
 
