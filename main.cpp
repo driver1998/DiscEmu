@@ -34,7 +34,7 @@ int action_do_nothing(std::any arg);
 std::filesystem::path iso_root = std::filesystem::path("isos");
 
 std::vector<MenuItem> main_menu = {
-    MenuItem{.name = "Disc Emulator",
+    MenuItem{.name = "Image Browser",
              .action = action_file_browser,
              .action_arg = iso_root},
     MenuItem{.name = "USB RNDIS", .action = action_rndis},
@@ -51,7 +51,7 @@ void reset_disc_emu() {
 }
 
 int action_main_menu(std::any arg) {
-  Menu menu;
+  Menu menu { .title = "DiscEmu" };
   menu_init(&menu, &main_menu);
   menu_run(&menu, &u8g2);
   return 0;
@@ -84,9 +84,8 @@ int action_disk_emu(std::any arg) {
   }
   usb_gadget_start();
 
-  Menu emu_menu;
-  std::vector<MenuItem> emu_menu_items = {
-      MenuItem{.name = "Current image", .action = action_do_nothing},
+  Menu emu_menu { .title = "Current image" };
+  std::vector<MenuItem> emu_menu_items = {      
       MenuItem{.name = path.filename().c_str(), .action = action_do_nothing},
       MenuItem{.name = "Eject",
                .action =
@@ -111,7 +110,7 @@ int action_file_browser(std::any arg) {
 
   std::vector<MenuItem> dir_menu_items;
   std::vector<MenuItem> iso_menu_items;
-  Menu dir_menu;
+  Menu dir_menu { .title = path.filename().string() };
 
   dir_menu_items.push_back(MenuItem{.name = "[..]", .action = nullptr});
   for (const auto &entry : std::filesystem::directory_iterator(path)) {
@@ -148,10 +147,9 @@ int action_file_browser(std::any arg) {
 
 int action_status(std::any arg) {
   std::map<std::string, std::string> ip_map = get_ip_addr();
-  Menu status_menu;
-  std::vector<MenuItem> status_menu_items = {
-      MenuItem{.name = "Version"},
-      MenuItem{.name = version},
+  Menu status_menu { .title = "Status" };
+  std::vector<MenuItem> status_menu_items = {      
+      MenuItem{.name = "Version: " + version},
   };
 
   for (auto const &pair : ip_map) {
@@ -173,10 +171,9 @@ int action_rndis(std::any arg) {
   usb_gadget_stop();
   rndis_start();
 
-  Menu rndis_menu;
-  std::vector<MenuItem> rndis_menu_items = {
-      MenuItem{.name = "Board IP", .action = action_do_nothing},
-      MenuItem{.name = "192.168.42.1", .action = action_do_nothing},      
+  Menu rndis_menu { .title = "USB RNDIS" };
+  std::vector<MenuItem> rndis_menu_items = {      
+      MenuItem{.name = "IP: 192.168.42.1", .action = action_do_nothing},      
       MenuItem{.name = "Disconnect",
                .action =
                    [](std::any) {

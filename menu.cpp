@@ -9,11 +9,12 @@
 #include "input.h"
 #include "menu.h"
 
-const int PAGE_SIZE = 4;
-const int ITEM_Y[PAGE_SIZE] = {0, 16, 32, 48};
-const int SCREEN_WIDTH = 128;
-const int SCREEN_HEIGHT = 64;
-constexpr int ITEM_HEIGHT = SCREEN_HEIGHT / PAGE_SIZE;
+constexpr int TITLE_HEIGHT = 16;
+constexpr int PAGE_SIZE = 3;
+constexpr int ITEM_Y[PAGE_SIZE] = {16, 32, 48};
+constexpr int SCREEN_WIDTH = 128;
+constexpr int SCREEN_HEIGHT = 64;
+constexpr int ITEM_HEIGHT = (SCREEN_HEIGHT - TITLE_HEIGHT) / PAGE_SIZE;
 
 time_t current_time = time(nullptr);
 bool screen_clear = false;
@@ -85,14 +86,22 @@ void menu_draw(Menu *menu, u8g2_t *display) {
     }
   }
 
-  u8g2_SetDrawColor(display, 0);
-  u8g2_DrawBox(display, SCREEN_WIDTH - 4, 0, 4, SCREEN_HEIGHT);
-  u8g2_SetDrawColor(display, 1);
-  int scrollbar_block_height = SCREEN_HEIGHT / item_count;
-  u8g2_DrawBox(display, SCREEN_WIDTH - 4 + 2,
-               scrollbar_block_height * (menu->curr_index), 2,
-               scrollbar_block_height);
-
+  if (TITLE_HEIGHT > 0) {
+    u8g2_SetDrawColor(display, 1);
+    u8g2_DrawStr(display, 0, 12, menu->title.c_str());
+    u8g2_DrawLine(display, 0, TITLE_HEIGHT - 1, SCREEN_WIDTH, TITLE_HEIGHT - 1);  
+  }
+  
+  if (item_count > PAGE_SIZE) {
+    u8g2_SetDrawColor(display, 0);
+    u8g2_DrawBox(display, SCREEN_WIDTH - 4, TITLE_HEIGHT, 4, SCREEN_HEIGHT);
+    u8g2_SetDrawColor(display, 1);
+    float scrollbar_block_height = (float)(SCREEN_HEIGHT - TITLE_HEIGHT) / item_count;
+    u8g2_DrawBox(display, SCREEN_WIDTH - 4 + 2,
+                 TITLE_HEIGHT + scrollbar_block_height * (menu->curr_index), 2,
+                 scrollbar_block_height);
+  }
+  
   u8g2_SendBuffer(display);
 }
 
