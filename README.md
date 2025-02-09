@@ -24,8 +24,6 @@ Pinout:
 |EC11 S2  | 19   |
 |EC11 KEY | 18   |
 
-Currently Pin 16 is set as high output used for EC11 power, this will be changed in later revisions.
-
 ## Build
 
 You can build this with the official SDK.

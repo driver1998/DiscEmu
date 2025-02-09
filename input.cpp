@@ -11,7 +11,6 @@ extern "C" {
 const int ROT_S1 = 20;
 const int ROT_S2 = 19;
 const int ROT_KEY = 18;
-const int ROT_PWR = 16;
 
 std::thread input_thread;
 std::atomic<InputValue> input_value = InputValue::Unknown;
@@ -56,12 +55,9 @@ int input_init() {
   exportGPIOPin(ROT_S1);
   exportGPIOPin(ROT_S2);
   exportGPIOPin(ROT_KEY);
-  exportGPIOPin(ROT_PWR);
   setGPIODirection(ROT_S1, GPIO_IN);
   setGPIODirection(ROT_S2, GPIO_IN);
   setGPIODirection(ROT_KEY, GPIO_IN);
-  setGPIODirection(ROT_PWR, GPIO_OUT);
-  setGPIOValue(ROT_PWR, GPIO_HIGH);
 
   input_thread = std::thread(input_thread_func);
   return 1;
