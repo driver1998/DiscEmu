@@ -20,7 +20,7 @@
 #include "network.h"
 #include "usb.h"
 
-const std::string version = "0.0.1";
+const std::string version = "0.1.0";
 u8g2_t u8g2 = {};
 
 int action_rndis(std::any arg);
@@ -34,7 +34,7 @@ int action_do_nothing(std::any arg);
 std::filesystem::path iso_root = std::filesystem::path("isos");
 
 std::vector<MenuItem> main_menu = {
-    MenuItem{.name = "CDROM Emulator",
+    MenuItem{.name = "Disc Emulator",
              .action = action_file_browser,
              .action_arg = iso_root},
     MenuItem{.name = "USB RNDIS", .action = action_rndis},
@@ -43,6 +43,12 @@ std::vector<MenuItem> main_menu = {
     MenuItem{.name = "Shutdown", .action = action_shutdown},
     MenuItem{.name = "Restart", .action = action_restart},
     MenuItem{.name = "", .action = action_do_nothing}};
+
+void reset_disc_emu() {
+  usb_gadget_stop();
+  usb_gadget_add_cdrom();
+  usb_gadget_start();
+}
 
 int action_main_menu(std::any arg) {
   Menu menu;
@@ -64,10 +70,18 @@ int action_errmsg(std::any arg) {
   return 0;
 }
 
-int action_cdrom_emu(std::any arg) {
+int action_disk_emu(std::any arg) {
   auto path = std::any_cast<std::filesystem::path>(arg);
 
-  usb_gadget_add_cdrom(path);
+  std::string ext = path.extension().string();
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+  
+  usb_gadget_stop();
+  if (ext == ".iso") {
+    usb_gadget_add_cdrom(path);
+  } else if (ext == ".img") {
+    usb_gadget_add_msc(path);
+  }
   usb_gadget_start();
 
   Menu emu_menu;
@@ -76,11 +90,11 @@ int action_cdrom_emu(std::any arg) {
       MenuItem{.name = path.filename().c_str(), .action = action_do_nothing},
       MenuItem{.name = "Eject",
                .action =
-                   [](std::any) {
-                     usb_gadget_stop();
-                     usleep(500 * 1000);
-                     return -1;
-                   }},
+                  [](std::any) {
+                    reset_disc_emu();
+                    usleep(500 * 1000);
+                    return -1;
+                  }},
       MenuItem{.name = "", .action = action_do_nothing},
   };
   menu_init(&emu_menu, &emu_menu_items);
@@ -110,11 +124,10 @@ int action_file_browser(std::any arg) {
                    .action_arg = entry.path()});
     } else {
       std::string ext = entry_path.extension().string();
-      std::string ext_lower(ext);
-      std::transform(ext.begin(), ext.end(), ext_lower.begin(), ::tolower);
-      if (ext_lower == ".iso") {
+      std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+      if (ext == ".iso" || ext == ".img") {
         iso_menu_items.push_back(MenuItem{.name = entry_path.filename(),
-                                          .action = action_cdrom_emu,
+                                          .action = action_disk_emu,
                                           .action_arg = entry.path()});
       }
     }
@@ -157,6 +170,7 @@ int action_rndis(std::any arg) {
   u8g2_DrawStr(&u8g2, 0, 28, "Initializing...");
   u8g2_SendBuffer(&u8g2);
 
+  usb_gadget_stop();
   rndis_start();
 
   Menu rndis_menu;
@@ -167,6 +181,8 @@ int action_rndis(std::any arg) {
                .action =
                    [](std::any) {
                      rndis_stop();
+                     reset_disc_emu();
+                     usleep(500 * 1000);
                      return -1;
                    }},
       MenuItem{.name = "", .action = action_do_nothing},
@@ -200,6 +216,7 @@ int action_restart(std::any arg) {
 
 int main(void) {
   usb_switch_to_device_mode();
+  reset_disc_emu();
 
   if (!std::filesystem::exists(iso_root)) {
     std::filesystem::create_directory(iso_root);

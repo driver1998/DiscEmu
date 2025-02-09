@@ -11,11 +11,12 @@ ifeq (,$(LDFLAGS))
 $(error LDFLAGS is not set)
 endif
 
-INCLUDE=-I$(SYSROOT)/include -I$(SYSROOT)/usr/include
-LDFLAGS+=-L$(SYSROOT)/lib -L$(SYSROOT)/usr/lib -static
-LDLIBS+=-l:libu8g2arm.a
+U8G2_PREFIX=${HOME}/libu8g2-linux
 
-CXXFLAGS=-std=c++17
+CXXFLAGS+=-I${U8G2_PREFIX}/include -std=c++17
+CFLAGS+= -I${U8G2_PREFIX}/include
+LDFLAGS+= -L${U8G2_PREFIX}/lib -static
+LDLIBS+=-l:libu8g2arm.a
 
 CC = $(TOOLCHAIN_PREFIX)gcc
 CXX = $(TOOLCHAIN_PREFIX)g++
@@ -23,10 +24,10 @@ CXX = $(TOOLCHAIN_PREFIX)g++
 default: disc-emu
 
 %.o: %.cpp
-	$(CXX) $(INCLUDE) $(CXXFLAGS) -o $@ -c $<
+	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 %.o: %.c
-	$(CC) $(INCLUDE) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 disc-emu: main.o menu.o input.o usb.o network.o
 	$(CXX) $(LDFLAGS)  main.o menu.o input.o usb.o network.o $(LDLIBS) -o disc-emu

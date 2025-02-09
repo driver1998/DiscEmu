@@ -17,6 +17,10 @@ void usb_gadget_add_cdrom(std::filesystem::path iso_path) {
     system(("./run_usb.sh probe cdrom '" + path_absolute.string() + "'").c_str());
 }
 
+void usb_gadget_add_cdrom() {
+    system("./run_usb.sh probe cdrom");
+}
+
 void usb_gadget_start() {
     system("./run_usb.sh start");
 }
