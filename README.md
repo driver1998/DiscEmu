@@ -49,5 +49,6 @@ cd $OLD_PWD
 
 - DiscEmu looks for ISO images at `isos` in the working directory, so `/mnt/data/isos` as configured above. You might want to mount a partition with large enough space to this directory.
 
-- Due to Linux kernel limitations, DVD images are not fully supported. Also there is a ~2.2GiB file size limit, there is a third-party patch to bypass this, see https://lkml.org/lkml/2015/3/7/388 for more details.
+- Due to Linux kernel limitations, DVD images are not fully supported. Also there is a ~2.2GiB file size limit, there is a third-party patch to bypass this, see https://lkml.org/lkml/2015/3/7/388 for more details. \
+You can use my fork of the official buildroot image for DVD images, it also includes some kernel patches that improves compability:  https://github.com/driver1998/duo-buildroot-sdk/releases/tag/v0.1-discemu.
 
