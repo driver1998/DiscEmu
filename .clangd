@@ -1,2 +1,2 @@
 CompileFlags:
-    Add: ['-I/home/driver1998/libu8g2-linux/include', '-std=c++17']
+    Add: ['-I/mnt/data/duo/libu8g2/include', '-std=c++17']

@@ -3,6 +3,10 @@ ifeq (,$(TOOLCHAIN_PREFIX))
 $(error TOOLCHAIN_PREFIX is not set)
 endif
 
+ifeq (,$(U8G2_PREFIX))
+$(error U8G2_PREFIX is not set)
+endif
+
 ifeq (,$(CFLAGS))
 $(error CFLAGS is not set)
 endif
@@ -10,8 +14,6 @@ endif
 ifeq (,$(LDFLAGS))
 $(error LDFLAGS is not set)
 endif
-
-U8G2_PREFIX=${HOME}/libu8g2-linux
 
 CXXFLAGS+=-I${U8G2_PREFIX}/include -std=c++17
 CFLAGS+= -I${U8G2_PREFIX}/include
