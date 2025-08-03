@@ -9,4 +9,6 @@ void usb_gadget_add_cdrom(std::filesystem::path iso_path);
 void usb_gadget_add_cdrom();
 void usb_gadget_add_msc(std::filesystem::path block_dev);
 void usb_gadget_add_rndis();
+void usb_gadget_add_ncm();
+void usb_gadget_add_mtp();
 #endif

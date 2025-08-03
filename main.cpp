@@ -20,10 +20,12 @@
 #include "network.h"
 #include "usb.h"
 
-const std::string version = "0.1.0";
+const std::string version = "0.1.1";
 u8g2_t u8g2 = {};
 
+int action_mtp(std::any arg);
 int action_rndis(std::any arg);
+int action_ncm(std::any arg);
 int action_cdrom_emu(std::any arg);
 int action_file_browser(std::any arg);
 int action_status(std::any arg);
@@ -37,7 +39,9 @@ std::vector<MenuItem> main_menu = {
     MenuItem{.name = "Image Browser",
              .action = action_file_browser,
              .action_arg = iso_root},
+    MenuItem{.name = "USB MTP", .action = action_mtp},
     MenuItem{.name = "USB RNDIS", .action = action_rndis},
+    MenuItem{.name = "USB NCM", .action = action_ncm},
     MenuItem{.name = "Status", .action = action_status},
     MenuItem{.name = "", .action = action_do_nothing},
     MenuItem{.name = "Shutdown", .action = action_shutdown},
@@ -51,7 +55,7 @@ void reset_disc_emu() {
 }
 
 int action_main_menu(std::any arg) {
-  Menu menu { .title = "DiscEmu" };
+  Menu menu{.title = "DiscEmu"};
   menu_init(&menu, &main_menu);
   menu_run(&menu, &u8g2);
   return 0;
@@ -75,7 +79,7 @@ int action_disk_emu(std::any arg) {
 
   std::string ext = path.extension().string();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-  
+
   usb_gadget_stop();
   if (ext == ".iso") {
     usb_gadget_add_cdrom(path);
@@ -84,16 +88,16 @@ int action_disk_emu(std::any arg) {
   }
   usb_gadget_start();
 
-  Menu emu_menu { .title = "Current image" };
-  std::vector<MenuItem> emu_menu_items = {      
+  Menu emu_menu{.title = "Current image"};
+  std::vector<MenuItem> emu_menu_items = {
       MenuItem{.name = path.filename().c_str(), .action = action_do_nothing},
       MenuItem{.name = "Eject",
                .action =
-                  [](std::any) {
-                    reset_disc_emu();
-                    usleep(500 * 1000);
-                    return -1;
-                  }},
+                   [](std::any) {
+                     reset_disc_emu();
+                     usleep(500 * 1000);
+                     return -1;
+                   }},
       MenuItem{.name = "", .action = action_do_nothing},
   };
   menu_init(&emu_menu, &emu_menu_items);
@@ -110,7 +114,7 @@ int action_file_browser(std::any arg) {
 
   std::vector<MenuItem> dir_menu_items;
   std::vector<MenuItem> iso_menu_items;
-  Menu dir_menu { .title = path.filename().string() };
+  Menu dir_menu{.title = path.filename().string()};
 
   dir_menu_items.push_back(MenuItem{.name = "[..]", .action = nullptr});
   for (const auto &entry : std::filesystem::directory_iterator(path)) {
@@ -147,8 +151,8 @@ int action_file_browser(std::any arg) {
 
 int action_status(std::any arg) {
   std::map<std::string, std::string> ip_map = get_ip_addr();
-  Menu status_menu { .title = "Status" };
-  std::vector<MenuItem> status_menu_items = {      
+  Menu status_menu{.title = "Status"};
+  std::vector<MenuItem> status_menu_items = {
       MenuItem{.name = "Version: " + version},
   };
 
@@ -162,6 +166,34 @@ int action_status(std::any arg) {
   return 0;
 }
 
+int action_mtp(std::any arg) {
+  u8g2_ClearBuffer(&u8g2);
+  u8g2_SetDrawColor(&u8g2, 1);
+  u8g2_DrawStr(&u8g2, 0, 28, "Initializing...");
+  u8g2_SendBuffer(&u8g2);
+
+  usb_gadget_stop();
+  usb_gadget_add_mtp();
+  usb_gadget_start();
+
+  Menu mtp_menu{.title = "USB MTP"};
+  std::vector<MenuItem> mtp_menu_items = {
+      MenuItem{.name = "Status: Connected", .action = action_do_nothing},
+      MenuItem{.name = "Disconnect",
+               .action =
+                   [](std::any) {
+                     usb_gadget_stop();
+                     reset_disc_emu();
+                     usleep(500 * 1000);
+                     return -1;
+                   }},
+      MenuItem{.name = "", .action = action_do_nothing},
+  };
+  menu_init(&mtp_menu, &mtp_menu_items);
+  menu_run(&mtp_menu, &u8g2);
+  return 0;
+}
+
 int action_rndis(std::any arg) {
   u8g2_ClearBuffer(&u8g2);
   u8g2_SetDrawColor(&u8g2, 1);
@@ -169,15 +201,42 @@ int action_rndis(std::any arg) {
   u8g2_SendBuffer(&u8g2);
 
   usb_gadget_stop();
-  rndis_start();
+  usb_rndis_start();
 
-  Menu rndis_menu { .title = "USB RNDIS" };
-  std::vector<MenuItem> rndis_menu_items = {      
-      MenuItem{.name = "IP: 192.168.42.1", .action = action_do_nothing},      
+  Menu rndis_menu{.title = "USB RNDIS"};
+  std::vector<MenuItem> rndis_menu_items = {
+      MenuItem{.name = "IP: 192.168.42.1", .action = action_do_nothing},
       MenuItem{.name = "Disconnect",
                .action =
                    [](std::any) {
-                     rndis_stop();
+                     usb_net_stop();
+                     reset_disc_emu();
+                     usleep(500 * 1000);
+                     return -1;
+                   }},
+      MenuItem{.name = "", .action = action_do_nothing},
+  };
+  menu_init(&rndis_menu, &rndis_menu_items);
+  menu_run(&rndis_menu, &u8g2);
+  return 0;
+}
+
+int action_ncm(std::any arg) {
+  u8g2_ClearBuffer(&u8g2);
+  u8g2_SetDrawColor(&u8g2, 1);
+  u8g2_DrawStr(&u8g2, 0, 28, "Initializing...");
+  u8g2_SendBuffer(&u8g2);
+
+  usb_gadget_stop();
+  usb_ncm_start();
+
+  Menu rndis_menu{.title = "USB NCM"};
+  std::vector<MenuItem> rndis_menu_items = {
+      MenuItem{.name = "IP: 192.168.42.1", .action = action_do_nothing},
+      MenuItem{.name = "Disconnect",
+               .action =
+                   [](std::any) {
+                     usb_net_stop();
                      reset_disc_emu();
                      usleep(500 * 1000);
                      return -1;

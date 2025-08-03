@@ -32,3 +32,11 @@ void usb_gadget_stop() {
 void usb_gadget_add_rndis() {
     system("./run_usb.sh probe rndis");
 }
+
+void usb_gadget_add_ncm() {
+    system("./run_usb.sh probe ncm");
+}
+
+void usb_gadget_add_mtp() {
+    system("./run_usb.sh probe mtp");
+}

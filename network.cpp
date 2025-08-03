@@ -14,7 +14,7 @@
 #include "network.h"
 #include "usb.h"
 
-void rndis_start() {
+void usb_rndis_start() {
   usb_gadget_add_rndis();
   usb_gadget_start();
   usleep(500 * 1000);
@@ -22,7 +22,15 @@ void rndis_start() {
   system("/etc/init.d/S80dnsmasq restart");
 }
 
-void rndis_stop() {
+void usb_ncm_start() {
+  usb_gadget_add_ncm();
+  usb_gadget_start();
+  usleep(500 * 1000);
+  system("ifconfig usb0 192.168.42.1");
+  system("/etc/init.d/S80dnsmasq restart");
+}
+
+void usb_net_stop() {
   usb_gadget_stop();
   system("/etc/init.d/S80dnsmasq stop");
   usleep(500 * 1000);
