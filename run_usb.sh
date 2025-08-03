@@ -5,6 +5,7 @@ MSC_PID=0x1008
 RNDIS_PID=0x1009
 UVC_PID=0x100A
 UAC_PID=0x100B
+NCM_PID=0x100C
 ADB_VID=0x18D1
 ADB_PID=0x4EE0
 ADB_PID_M1=0x4EE2
@@ -13,6 +14,7 @@ MTP_VID=0X1D6B
 MTP_PID=0x0100
 MANUFACTURER="Cvitek"
 PRODUCT="USB Com Port"
+PRODUCT_NCM="NCM"
 PRODUCT_RNDIS="RNDIS"
 PRODUCT_UVC="UVC"
 PRODUCT_UAC="UAC"
@@ -48,6 +50,11 @@ case "$2" in
 	;;
   cvg)
 	CLASS=cvg
+  ;;
+  ncm)
+	CLASS=ncm
+	PID=$NCM_PID
+	PRODUCT=$PRODUCT_NCM	
 	;;
   rndis)
 	CLASS=rndis
@@ -78,7 +85,7 @@ case "$2" in
   ;;
   *)
 	if [ "$1" = "probe" ] ; then
-	  echo "Usage: $0 probe {acm|msc|cdrom|cvg|rndis|uvc|uac1|adb|mtp} {file (msc|cdrom)}"
+	  echo "Usage: $0 probe {acm|msc|cdrom|cvg|ncm|rndis|uvc|uac1|adb|mtp} {file}"
 	  exit 1
 	fi
 esac
@@ -99,6 +106,11 @@ res_check() {
   EP_OUT=$(($EP_OUT+$TMP_NUM))
   INTF_NUM=$(($INTF_NUM+$TMP_NUM))
   TMP_NUM=$(find $CVI_GADGET/functions/ -name "cvg*" | wc -l)
+  EP_IN=$(($EP_IN+$TMP_NUM))
+  EP_OUT=$(($EP_OUT+$TMP_NUM))
+  INTF_NUM=$(($INTF_NUM+$TMP_NUM))
+  TMP_NUM=$(find $CVI_GADGET/functions/ -name "ncm*" | wc -l)
+  TMP_NUM=$(($TMP_NUM * 2))
   EP_IN=$(($EP_IN+$TMP_NUM))
   EP_OUT=$(($EP_OUT+$TMP_NUM))
   INTF_NUM=$(($INTF_NUM+$TMP_NUM))
@@ -134,6 +146,10 @@ res_check() {
     EP_OUT=$(($EP_OUT+1))
   fi
   if [ "$CLASS" = "cvg" ] ; then
+    EP_IN=$(($EP_IN+1))
+    EP_OUT=$(($EP_OUT+1))
+  fi
+  if [ "$CLASS" = "ncm" ] ; then
     EP_IN=$(($EP_IN+1))
     EP_OUT=$(($EP_OUT+1))
   fi
@@ -229,6 +245,9 @@ probe() {
       echo 1 > $CVI_GADGET/functions/$CLASS.usb$FUNC_NUM/lun.0/cdrom
     fi
     echo $MSC_FILE >$CVI_GADGET/functions/$CLASS.usb$FUNC_NUM/lun.0/file    
+  fi
+  if [ "$CLASS" = "ncm" ] ; then
+    ln -s $CVI_FUNC/ncm.usb$FUNC_NUM $CVI_GADGET/configs/c.1
   fi
   if [ "$CLASS" = "rndis" ] ; then
     #OS STRING
@@ -336,7 +355,7 @@ case "$1" in
 	ls /sys/class/udc/ >$CVI_GADGET/UDC
 	;;
   *)
-	echo "Usage: $0 probe {acm|msc|cdrom|cvg|uvc|uac1} {file (msc|cdrom)}"
+	echo "Usage: $0 probe {acm|msc|cdrom|cvg|ncm|rndis|uvc|uac1}"
 	echo "Usage: $0 start"
 	echo "Usage: $0 stop"
 	exit 1
