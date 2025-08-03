@@ -9,13 +9,17 @@ ADB_VID=0x18D1
 ADB_PID=0x4EE0
 ADB_PID_M1=0x4EE2
 ADB_PID_M2=0x4EE4
+MTP_VID=0X1D6B
+MTP_PID=0x0100
 MANUFACTURER="Cvitek"
 PRODUCT="USB Com Port"
 PRODUCT_RNDIS="RNDIS"
 PRODUCT_UVC="UVC"
 PRODUCT_UAC="UAC"
 PRODUCT_ADB="ADB"
+PRODUCT_MTP="MTP"
 ADBD_PATH=/usr/bin/
+MTPD_PATH=/usr/bin/
 SERIAL="0123456789"
 MSC_FILE=$3
 CVI_DIR=/tmp/usb
@@ -66,9 +70,15 @@ case "$2" in
 	PID=$ADB_PID
 	PRODUCT=$PRODUCT_ADB
 	;;
+  mtp)
+  CLASS=ffs.mtp
+  VID=$MTP_VID
+  PID=$MTP_PID
+  PRODUCT=$PRODUCT_MTP
+  ;;
   *)
 	if [ "$1" = "probe" ] ; then
-	  echo "Usage: $0 probe {acm|msc|cdrom|cvg|rndis|uvc|uac1|adb} {file (msc|cdrom)}"
+	  echo "Usage: $0 probe {acm|msc|cdrom|cvg|rndis|uvc|uac1|adb|mtp} {file (msc|cdrom)}"
 	  exit 1
 	fi
 esac
@@ -110,6 +120,10 @@ res_check() {
   EP_IN=$(($EP_IN+$TMP_NUM))
   EP_OUT=$(($EP_OUT+$TMP_NUM))
   INTF_NUM=$(($INTF_NUM+$TMP_NUM))
+  TMP_NUM=$(find $CVI_GADGET/functions/ -name ffs.mtp | wc -l)
+  EP_IN=$(($EP_IN+$TMP_NUM))
+  EP_OUT=$(($EP_OUT+$TMP_NUM))
+  INTF_NUM=$(($INTF_NUM+$TMP_NUM))
 
   if [ "$CLASS" = "acm" ] ; then
     EP_IN=$(($EP_IN+2))
@@ -135,6 +149,10 @@ res_check() {
     EP_OUT=$(($EP_OUT+1))
   fi
   if [ "$CLASS" = "ffs.adb" ] ; then
+    EP_IN=$(($EP_IN+1))
+    EP_OUT=$(($EP_OUT+1))
+  fi
+  if [ "$CLASS" = "ffs.mtp" ] ; then
     EP_IN=$(($EP_IN+1))
     EP_OUT=$(($EP_OUT+1))
   fi
@@ -197,6 +215,12 @@ probe() {
       echo $ADB_PID_M2 >$CVI_GADGET/idProduct
     fi
     mkdir $CVI_GADGET/functions/$CLASS
+  elif [ "$CLASS" = "ffs.mtp" ] ; then
+    # mtp should not be used with adb at the same time
+    # mtp shall be the last function to probe. Override the pid/vid
+    echo $VID >$CVI_GADGET/idVendor
+    echo $PID >$CVI_GADGET/idProduct    
+    mkdir $CVI_GADGET/functions/$CLASS
   else
     mkdir $CVI_GADGET/functions/$CLASS.usb$FUNC_NUM
   fi
@@ -246,8 +270,18 @@ start() {
     mkdir /dev/usb-ffs/adb -p
     mount -t functionfs adb /dev/usb-ffs/adb
     if [ -f $ADBD_PATH/adbd ]; then
-	$ADBD_PATH/adbd &
+	    $ADBD_PATH/adbd &
     fi
+  elif [ -d $CVI_GADGET/functions/ffs.mtp ]; then
+    ln -s $CVI_GADGET/functions/ffs.mtp $CVI_GADGET/configs/c.1
+    mkdir /dev/usb-ffs/mtp -p
+    mount -t functionfs mtp /dev/usb-ffs/mtp
+    if [ -f $MTPD_PATH/umtprd ]; then
+	    $MTPD_PATH/umtprd &
+    fi
+    # Start the gadget driver
+    UDC=`ls /sys/class/udc/ | awk '{print $1}'`
+    echo ${UDC} >$CVI_GADGET/UDC
   else
     # Start the gadget driver
     UDC=`ls /sys/class/udc/ | awk '{print $1}'`
@@ -257,8 +291,17 @@ start() {
 
 stop() {
   if [ -d $CVI_GADGET/configs/c.1/ffs.adb ]; then
-    pkill adbd
+    killall adbd
     rm $CVI_GADGET/configs/c.1/ffs.adb
+    umount /dev/usb-ffs/adb
+    rmdir /dev/usb-ffs/adb
+    rmdir /dev/usb-ffs
+  elif [ -d $CVI_GADGET/configs/c.1/ffs.mtp ]; then
+    killall umtprd
+    rm $CVI_GADGET/configs/c.1/ffs.mtp
+    umount /dev/usb-ffs/mtp
+    rmdir /dev/usb-ffs/mtp
+    rmdir /dev/usb-ffs
   else
     echo "" >$CVI_GADGET/UDC
   fi
